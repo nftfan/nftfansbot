@@ -1,15 +1,15 @@
 const { Telegraf } = require('telegraf');
-const { ethers } = require('ethers');  // Make sure ethers is imported
-require('dotenv').config();  // Import environment variables
+const { ethers } = require('ethers');
+require('dotenv').config();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);  // Ethereum RPC provider
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);  // Wallet with private key
-const nftFanContractAddress = "0x2017Fcaea540d2925430586DC92818035Bfc2F50";  // NFTFan token contract address
-const nftFanABI = ["function transfer(address to, uint amount) public"];  // Simple transfer ABI
+const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+const nftFanContractAddress = "0x2017Fcaea540d2925430586DC92818035Bfc2F50";
+const nftFanABI = ["function transfer(address to, uint amount) public"];
 
-const nftFanContract = new ethers.Contract(nftFanContractAddress, nftFanABI, wallet);  // Contract instance
+const nftFanContract = new ethers.Contract(nftFanContractAddress, nftFanABI, wallet);
 
 // Start command
 bot.start((ctx) => {
@@ -20,8 +20,9 @@ bot.start((ctx) => {
 bot.on('text', async (ctx) => {
     const walletAddress = ctx.message.text;
 
-    // Check if the message looks like a valid Ethereum address
+    // Check if the message is a valid Ethereum address
     if (!ethers.utils.isAddress(walletAddress)) {
+        // Ignore the message if it's not a valid Ethereum address
         ctx.reply("Invalid wallet address. Please send a valid Ethereum address.");
         return;
     }
