@@ -18,14 +18,22 @@ bot.start((ctx) => {
 
 // Receive wallet address and process transaction
 bot.on('text', async (ctx) => {
-    const walletAddress = ctx.message.text;
+    const messageText = ctx.message.text;
+
+    // Ensure the message is defined and not empty
+    if (!messageText) {
+        ctx.reply("Sorry, I didn't understand that. Please send a valid Ethereum wallet address.");
+        return;
+    }
 
     // Check if the message is a valid Ethereum address
-    if (!ethers.utils.isAddress(walletAddress)) {
-        // Ignore the message if it's not a valid Ethereum address
+    if (!ethers.utils.isAddress(messageText)) {
+        // If the message is not an address, inform the user
         ctx.reply("Invalid wallet address. Please send a valid Ethereum address.");
         return;
     }
+
+    const walletAddress = messageText;
 
     // Send tokens
     try {
