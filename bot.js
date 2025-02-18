@@ -3,7 +3,7 @@ const { Telegraf } = require('telegraf');
 const { ethers } = require('ethers');
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 
-// Hardcode AWS credentials here (not recommended for production)
+// Initialize the Secrets Manager client with hardcoded AWS credentials (not recommended for production)
 const secretsClient = new SecretsManagerClient({
   region: process.env.AWS_REGION, // e.g., "eu-north-1"
   credentials: {
@@ -12,6 +12,7 @@ const secretsClient = new SecretsManagerClient({
   }
 });
 
+// Initialize the Telegram bot
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
 async function getPrivateKeyFromSecretsManager() {
@@ -26,7 +27,7 @@ async function getPrivateKeyFromSecretsManager() {
       privateKey = parsedSecret.privateKey; // Ensure your secret is stored as: { "privateKey": "0x..." }
     }
     // Validate the private key format: must be a hex string with 66 characters (if 0x-prefixed) or 64 without.
-    if (!privateKey || !ethers.utils.isHexString(privateKey) || (privateKey.length !== 66 && privateKey.length !== 64)) {
+    if (!privateKey || !ethers.isHexString(privateKey) || (privateKey.length !== 66 && privateKey.length !== 64)) {
       throw new Error('Invalid private key format');
     }
     console.log("Private key fetched successfully.");
@@ -42,14 +43,13 @@ bot.on('text', async (ctx) => {
   console.log(`Received message: ${walletAddress}`);
   console.log('Type of walletAddress:', typeof walletAddress);
 
-  // Validate Ethereum address using ethers (v5/v6 compatible)
-  if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+  // Validate Ethereum address using ethers.v6
+  if (!walletAddress || !ethers.isAddress(walletAddress)) {
     console.log("Invalid wallet address");
     return ctx.reply("Invalid wallet address. Please send a valid Ethereum address.");
   }
   console.log(`Valid Ethereum address: ${walletAddress}`);
 
-  // Retrieve the private key from AWS Secrets Manager
   let privateKey;
   try {
     privateKey = await getPrivateKeyFromSecretsManager();
@@ -71,7 +71,7 @@ bot.on('text', async (ctx) => {
   console.log("Contract instance created.");
 
   try {
-    const amount = ethers.utils.parseEther("1.0"); // 1 NFTFan token
+    const amount = ethers.parseEther("1.0"); // Sending 1 NFTFan token (adjust as needed)
     console.log("Amount to send:", amount.toString());
     console.log("Sending transaction...");
     const tx = await contract.transfer(walletAddress, amount);
@@ -92,3 +92,4 @@ bot.launch({ handlerTimeout: 120000 })
   .catch((err) => {
     console.error("Error launching the bot:", err);
   });
+
