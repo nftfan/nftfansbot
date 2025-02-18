@@ -4,10 +4,10 @@ const { ethers } = require("ethers");
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
 
 // AWS Secrets Manager configuration
-const secretName = "nftfans-private-key"; // The name of your secret in AWS Secrets Manager
+const secretName = "nftfans-private-key"; // Your secret name in AWS Secrets Manager
 const region = "eu-north-1"; // AWS region where your secret is stored
 
-// Telegram Bot Token
+// Telegram Bot Token from .env
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
 // Initialize AWS Secrets Manager client
@@ -23,18 +23,16 @@ async function getPrivateKeyFromSecretsManager() {
         VersionStage: "AWSCURRENT",
       })
     );
-    
     const secret = response.SecretString;
     const secretJson = JSON.parse(secret);
     return secretJson.PRIVATE_KEY; // Assuming the secret is stored as { "PRIVATE_KEY": "your_private_key_here" }
-    
   } catch (error) {
     console.error("Error retrieving the secret:", error);
     throw error;
   }
 }
 
-// Initialize the bot
+// Initialize the Telegram bot
 const bot = new Telegraf(BOT_TOKEN);
 
 // Start command
@@ -42,14 +40,14 @@ bot.start((ctx) => {
   ctx.reply("Welcome! Send me your wallet address to receive NFTFan tokens!");
 });
 
-// Receive wallet address from user
+// Listen for text messages (wallet addresses)
 bot.on("text", async (ctx) => {
   const walletAddress = ctx.message.text.trim();
+  console.log("Received message:", walletAddress);
+  console.log("Type of walletAddress:", typeof walletAddress);
 
-  console.log("Received message:", walletAddress);  // Debugging line
-
-  // Check if the wallet address is undefined or empty
-  if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+  // Use ethers.isAddress (ethers v6) to validate the Ethereum address
+  if (!walletAddress || !ethers.isAddress(walletAddress)) {
     return ctx.reply("Invalid wallet address. Please send a valid Ethereum address.");
   }
 
@@ -61,30 +59,32 @@ bot.on("text", async (ctx) => {
     return ctx.reply("An error occurred while retrieving the private key. Please try again later.");
   }
 
-  // Set up the provider (using Infura for Polygon mainnet)
+  // Set up the provider using your Infura RPC URL from .env
   const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
 
   // Initialize the wallet with the private key
   const wallet = new ethers.Wallet(privateKey, provider);
 
-  // Contract address and ABI (simplified)
+  // Contract address and ABI (simplified for token transfer)
   const contractAddress = process.env.CONTRACT_ADDRESS;
   const contractABI = [
-    "function transfer(address to, uint amount) public returns (bool)",
+    "function transfer(address to, uint amount) public returns (bool)"
   ];
   
   // Create contract instance
   const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
   try {
-    // Send NFTFan tokens (amount can be adjusted)
-    const amount = ethers.utils.parseEther("1.0"); // 1 NFTFan token
+    // Convert token amount using ethers.parseEther (ethers v6)
+    const amount = ethers.parseEther("1.0"); // Sending 1 NFTFan token (adjust as needed)
+    
+    // Execute the transfer transaction
     const tx = await contract.transfer(walletAddress, amount);
     
     // Wait for the transaction to be mined
     await tx.wait();
 
-    // Notify the user about the transaction
+    // Notify the user
     ctx.reply(`Successfully sent NFTFan tokens to ${walletAddress}! Transaction hash: ${tx.hash}`);
   } catch (error) {
     console.error("Error sending tokens:", error);
@@ -92,7 +92,9 @@ bot.on("text", async (ctx) => {
   }
 });
 
-// Start the bot
+// Launch the bot
 bot.launch().then(() => {
   console.log("Bot is running...");
+}).catch((err) => {
+  console.error("Error launching the bot:", err);
 });
