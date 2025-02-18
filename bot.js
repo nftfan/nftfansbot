@@ -46,9 +46,9 @@ bot.start((ctx) => {
 bot.on("text", async (ctx) => {
   const walletAddress = ctx.message.text.trim();
   
-  // Validate the wallet address
-  if (!ethers.utils.isAddress(walletAddress)) {
-    return ctx.reply("Invalid wallet address. Please send a valid address.");
+  // Check if the user message is empty or not an Ethereum address
+  if (!walletAddress || !ethers.utils.isAddress(walletAddress)) {
+    return ctx.reply("Invalid wallet address. Please send a valid Ethereum address.");
   }
   
   // Retrieve the private key securely from AWS Secrets Manager
