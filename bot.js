@@ -3,20 +3,24 @@ const { Telegraf } = require("telegraf");
 const { ethers } = require("ethers");
 const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
 
-// AWS Secrets Manager configuration
+// AWS Secrets Manager configuration with hardcoded credentials (not recommended)
 const secretName = "nftfans-private-key"; // Your secret name in AWS Secrets Manager
 const region = "eu-north-1"; // AWS region where your secret is stored
+
+const awsCredentials = {
+  accessKeyId: "AKIAVRUVVVUMXIC5RVXS",
+  secretAccessKey: "0Lyc2ZCoaV882SeraJ+4cgzXi++epH/3HrHBtqIx"
+};
+
+const secretsClient = new SecretsManagerClient({ region, credentials: awsCredentials });
 
 // Telegram Bot Token from .env
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
-// Initialize AWS Secrets Manager client
-const secretsClient = new SecretsManagerClient({ region });
-
+// Function to retrieve the private key from AWS Secrets Manager
 async function getPrivateKeyFromSecretsManager() {
   let response;
   try {
-    // Fetch the secret from Secrets Manager
     response = await secretsClient.send(
       new GetSecretValueCommand({
         SecretId: secretName,
@@ -25,7 +29,7 @@ async function getPrivateKeyFromSecretsManager() {
     );
     const secret = response.SecretString;
     const secretJson = JSON.parse(secret);
-    return secretJson.PRIVATE_KEY; // Assuming the secret is stored as { "PRIVATE_KEY": "your_private_key_here" }
+    return secretJson.PRIVATE_KEY; // Assuming secret stored as: { "PRIVATE_KEY": "your_private_key_here" }
   } catch (error) {
     console.error("Error retrieving the secret:", error);
     throw error;
